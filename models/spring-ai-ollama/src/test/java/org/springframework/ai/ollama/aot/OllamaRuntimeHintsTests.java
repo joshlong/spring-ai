@@ -9,7 +9,7 @@ import org.springframework.aot.hint.TypeReference;
 import java.util.Set;
 
 import static org.assertj.core.api.AssertionsForClassTypes.*;
-import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClasses;
+import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClassesInPackage;
 import static org.springframework.aot.hint.predicate.RuntimeHintsPredicates.*;
 
 class OllamaRuntimeHintsTests {
@@ -20,12 +20,12 @@ class OllamaRuntimeHintsTests {
 		OllamaRuntimeHints ollamaRuntimeHints = new OllamaRuntimeHints();
 		ollamaRuntimeHints.registerHints(runtimeHints, null);
 
-		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClasses(OllamaApi.class);
+		Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(OllamaApi.class);
 		for (TypeReference jsonAnnotatedClass : jsonAnnotatedClasses) {
 			assertThat(runtimeHints).matches(reflection().onType(jsonAnnotatedClass));
 		}
 
-		jsonAnnotatedClasses = findJsonAnnotatedClasses(OllamaOptions.class);
+		jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(OllamaOptions.class);
 		for (TypeReference jsonAnnotatedClass : jsonAnnotatedClasses) {
 			assertThat(runtimeHints).matches(reflection().onType(jsonAnnotatedClass));
 		}

@@ -1,17 +1,15 @@
 package org.springframework.ai.aot;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.aot.hint.RuntimeHints;
-import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.aot.hint.TypeReference;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
 
-import java.util.Objects;
-import java.util.Set;
+import java.lang.reflect.Executable;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -21,45 +19,96 @@ import java.util.stream.Collectors;
  * @author Christian Tzolov
  * @author Mark Pollack
  */
-public class AiRuntimeHints implements RuntimeHintsRegistrar {
+public class AiRuntimeHints {
 
-	static final Logger log = LoggerFactory.getLogger(AiRuntimeHints.class);
+	private static final Logger log = LoggerFactory.getLogger(AiRuntimeHints.class);
 
-	@Override
-	public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
-
-		for (var h : Set.of(new KnuddelsHints()))
-			h.registerHints(hints, classLoader);
-
-		hints.resources().registerResource(new ClassPathResource("embedding/embedding-model-dimensions.properties"));
-	}
-
-	static class KnuddelsHints implements RuntimeHintsRegistrar {
-
-		@Override
-		public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
+	public static Set<TypeReference> findJsonAnnotatedClassesInPackage(String packageName) {
+		var classPathScanningCandidateComponentProvider = new ClassPathScanningCandidateComponentProvider(false);
+		var annotationTypeFilter = new AnnotationTypeFilter(JsonInclude.class);
+		classPathScanningCandidateComponentProvider.addIncludeFilter((metadataReader, metadataReaderFactory) -> {
 			try {
-				hints.resources().registerResource(new ClassPathResource("/com/knuddels/jtokkit/cl100k_base.tiktoken"));
+				var clazz = Class.forName(metadataReader.getClassMetadata().getClassName());
+				return annotationTypeFilter.match(metadataReader, metadataReaderFactory)
+						|| !discoverJacksonAnnotatedTypesFromRootType(clazz).isEmpty();
 			}
-			catch (Exception e) {
+			catch (ClassNotFoundException e) {
 				throw new RuntimeException(e);
 			}
-		}
-
-	}
-
-	public static Set<TypeReference> findJsonAnnotatedClasses(Class<?> packageClass) {
-		var packageName = packageClass.getPackageName();
-		var classPathScanningCandidateComponentProvider = new ClassPathScanningCandidateComponentProvider(false);
-		classPathScanningCandidateComponentProvider.addIncludeFilter(new AnnotationTypeFilter(JsonInclude.class));
-		return classPathScanningCandidateComponentProvider.findCandidateComponents(packageName)
-			.stream()
-			.map(bd -> TypeReference.of(Objects.requireNonNull(bd.getBeanClassName())))
+		});
+		return classPathScanningCandidateComponentProvider//
+			.findCandidateComponents(packageName)//
+			.stream()//
+			.map(bd -> TypeReference.of(Objects.requireNonNull(bd.getBeanClassName())))//
 			.peek(tr -> {
 				if (log.isDebugEnabled())
 					log.debug("registering [" + tr.getName() + ']');
 			})
 			.collect(Collectors.toUnmodifiableSet());
+
+	}
+
+	public static Set<TypeReference> findJsonAnnotatedClassesInPackage(Class<?> packageClass) {
+		return findJsonAnnotatedClassesInPackage(packageClass.getPackageName());
+	}
+
+	private static boolean hasJacksonAnnotations(Class<?> type) {
+		var hasAnnotation = false;
+		var annotationsToFind = Set.of(JsonProperty.class, JsonInclude.class);
+		for (var annotationToFind : annotationsToFind) {
+
+			if (type.isAnnotationPresent(annotationToFind)) {
+				hasAnnotation = true;
+			}
+
+			var executables = new HashSet<Executable>();
+			executables.addAll(Set.of(type.getMethods()));
+			executables.addAll(Set.of(type.getConstructors()));
+			executables.addAll(Set.of(type.getDeclaredConstructors()));
+
+			for (var executable : executables) {
+				//
+				if (executable.isAnnotationPresent(annotationToFind)) {
+					hasAnnotation = true;
+				}
+
+				///
+				for (var p : executable.getParameters()) {
+					if (p.isAnnotationPresent(annotationToFind)) {
+						hasAnnotation = true;
+					}
+				}
+			}
+
+			if (type.getRecordComponents() != null) {
+				for (var r : type.getRecordComponents()) {
+					if (r.isAnnotationPresent(annotationToFind)) {
+						hasAnnotation = true;
+					}
+				}
+			}
+
+			for (var f : type.getFields()) {
+				if (f.isAnnotationPresent(annotationToFind)) {
+					hasAnnotation = true;
+				}
+			}
+		}
+
+		return hasAnnotation;
+	}
+
+	private static Set<Class<?>> discoverJacksonAnnotatedTypesFromRootType(Class<?> type) {
+		var jsonTypes = new HashSet<Class<?>>();
+		var classesToInspect = new HashSet<Class<?>>();
+		classesToInspect.add(type);
+		classesToInspect.addAll(Arrays.asList(type.getNestMembers()));
+		for (var n : classesToInspect) {
+			if (hasJacksonAnnotations(n)) {
+				jsonTypes.add(n);
+			}
+		}
+		return jsonTypes;
 	}
 
 }

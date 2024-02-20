@@ -11,7 +11,7 @@ import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 
-import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClasses;
+import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClassesInPackage;
 
 /**
  * The BedrockRuntimeHints class is responsible for registering runtime hints for Bedrock
@@ -26,19 +26,19 @@ public class BedrockRuntimeHints implements RuntimeHintsRegistrar {
 	@Override
 	public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
-		for (var tr : findJsonAnnotatedClasses(Ai21Jurassic2ChatBedrockApi.class))
+		for (var tr : findJsonAnnotatedClassesInPackage(Ai21Jurassic2ChatBedrockApi.class))
 			hints.reflection().registerType(tr, mcs);
-		for (var tr : findJsonAnnotatedClasses(CohereChatBedrockApi.class))
+		for (var tr : findJsonAnnotatedClassesInPackage(CohereChatBedrockApi.class))
 			hints.reflection().registerType(tr, mcs);
-		for (var tr : findJsonAnnotatedClasses(CohereEmbeddingBedrockApi.class))
+		for (var tr : findJsonAnnotatedClassesInPackage(CohereEmbeddingBedrockApi.class))
 			hints.reflection().registerType(tr, mcs);
-		for (var tr : findJsonAnnotatedClasses(Llama2ChatBedrockApi.class))
+		for (var tr : findJsonAnnotatedClassesInPackage(Llama2ChatBedrockApi.class))
 			hints.reflection().registerType(tr, mcs);
-		for (var tr : findJsonAnnotatedClasses(TitanChatBedrockApi.class))
+		for (var tr : findJsonAnnotatedClassesInPackage(TitanChatBedrockApi.class))
 			hints.reflection().registerType(tr, mcs);
-		for (var tr : findJsonAnnotatedClasses(TitanEmbeddingBedrockApi.class))
+		for (var tr : findJsonAnnotatedClassesInPackage(TitanEmbeddingBedrockApi.class))
 			hints.reflection().registerType(tr, mcs);
-		for (var tr : findJsonAnnotatedClasses(AnthropicChatBedrockApi.class))
+		for (var tr : findJsonAnnotatedClassesInPackage(AnthropicChatBedrockApi.class))
 			hints.reflection().registerType(tr, mcs);
 	}
 

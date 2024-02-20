@@ -16,7 +16,7 @@ import java.util.Set;
 import java.util.Arrays;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClasses;
+import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClassesInPackage;
 import static org.springframework.aot.hint.predicate.RuntimeHintsPredicates.reflection;
 
 class BedrockRuntimeHintsTests {
@@ -32,7 +32,7 @@ class BedrockRuntimeHintsTests {
 				TitanEmbeddingBedrockApi.class, AnthropicChatBedrockApi.class);
 
 		for (Class aClass : classList) {
-			Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClasses(aClass);
+			Set<TypeReference> jsonAnnotatedClasses = findJsonAnnotatedClassesInPackage(aClass);
 			for (TypeReference jsonAnnotatedClass : jsonAnnotatedClasses) {
 				assertThat(runtimeHints).matches(reflection().onType(jsonAnnotatedClass));
 			}
