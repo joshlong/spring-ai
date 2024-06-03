@@ -1,7 +1,6 @@
 package org.springframework.ai.chat.service.invoker;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.core.annotation.MergedAnnotation;
 import org.springframework.core.annotation.MergedAnnotationPredicates;
 import org.springframework.core.annotation.MergedAnnotations;
@@ -23,14 +22,14 @@ import java.util.function.Function;
  */
 class ChatModelServiceMethod {
 
-	private final ChatModel chatModel;
+	private final ChatClient chatClient;
 
 	private final Class<?> containingClass;
 
 	private final Method method;
 
-	<S> ChatModelServiceMethod(ChatModel chatModel, Class<?> containingClass, Method method) {
-		this.chatModel = chatModel;
+	<S> ChatModelServiceMethod(ChatClient chatClient, Class<?> containingClass, Method method) {
+		this.chatClient = chatClient;
 		this.containingClass = containingClass;
 		this.method = method;
 	}
@@ -53,7 +52,7 @@ class ChatModelServiceMethod {
 	private static ChatExchange getChatExchangeFor(List<AnnotationDescriptor> methods) {
 		if (methods == null || methods.isEmpty())
 			return null;
-		var first = methods.getFirst();
+		var first = methods.get(0);
 		return first.exchange;
 	}
 
@@ -70,7 +69,7 @@ class ChatModelServiceMethod {
 		var userParams = getParamsFor(this.method, UserParam.class, arguments);
 		var systemParams = getParamsFor(this.method, SystemParam.class, arguments);
 
-		var ccb = ChatClient.create(this.chatModel).prompt();
+		var ccb = this.chatClient.prompt();
 
 		if (StringUtils.hasText(user))
 			ccb = ccb.user(spec -> spec.text(user).params(userParams));
@@ -111,10 +110,6 @@ class ChatModelServiceMethod {
 		private final ChatExchange exchange;
 
 		private final MergedAnnotation<?> root;
-
-		ChatExchange exchange() {
-			return this.exchange;
-		}
 
 		AnnotationDescriptor(MergedAnnotation<ChatExchange> mergedAnnotation) {
 			this.exchange = mergedAnnotation.synthesize();
