@@ -12,6 +12,12 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
+ *
+ * Factory to create a client proxy from a {@link ChatModel} service interface with
+ * {@link ChatExchange @ChatExchange} methods.
+ *
+ * To create an instance, use static methods to obtain a {@link Builder Builder}.
+ *
  * @author Josh Long
  */
 public class ChatModelServiceProxyFactory {
